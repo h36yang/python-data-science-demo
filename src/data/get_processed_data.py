@@ -38,7 +38,7 @@ def process_data(df):
             .assign(IsAdult = lambda x: np.where(x.AgeState == 'Adult', 1, 0))
             .pipe(pd.get_dummies, columns = ['Deck', 'Pclass', 'Title', 'Fare_Bin', 'Embarked'])
             # drop unnecessary columns
-            .drop(['Cabin', 'Name', 'Ticket', 'Parch', 'SibSp', 'Sex'], axis = 1)
+            .drop(['Cabin', 'Name', 'Ticket', 'Parch', 'SibSp', 'Sex', 'AgeState'], axis = 1)
             # reorder columns
             .pipe(reorder_columns)
            )
