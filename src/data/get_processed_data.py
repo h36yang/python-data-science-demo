@@ -22,23 +22,32 @@ def process_data(df):
             .assign(Title = lambda x: x.Name.map(get_title))
             # fill missing values
             .pipe(fill_missing_values)
-            # create Fare_Bin feature
-            .assign(Fare_Bin = lambda x: pd.qcut(x.Fare, 4, labels = ['very_low', 'low', 'high', 'very_high']))
+            # binning - create AgeBand feature
+            .assign(AgeBand = lambda x: pd.cut(x.Age, 5, labels = [0, 1, 2, 3, 4]))
+            # binning - create FareBand feature
+            .assign(FareBand = lambda x: pd.qcut(x.Fare, 4, labels = [ 0, 1, 2, 3 ]))
+            # create IsSenior feature
+            .assign(IsSenior = lambda x: np.where(x.Age >= 65, 1, 0))
             # create AgeState feature
             .assign(AgeState = lambda x: np.where(x.Age >= 18, 'Adult', 'Child'))
             # create FamilySize feature
             .assign(FamilySize = lambda x: x.Parch + x.SibSp + 1)
+            # create IsAlone feature
+            .assign(IsAlone = lambda x: np.where(x.FamilySize == 1, 1, 0))
             # create IsMother feature
             .assign(IsMother = lambda x: np.where(((x.Age > 18) & (x.Sex == 'female') & (x.Parch > 0) & (x.Title != 'Miss')), 1, 0))
             # create Deck feature
             .assign(Cabin = lambda x: np.where(x.Cabin == 'T', np.NaN, x.Cabin))
             .assign(Deck = lambda x: x.Cabin.map(get_deck))
-            # feature encoding
+            # binary feature encoding
             .assign(IsMale = lambda x: np.where(x.Sex == 'male', 1, 0))
             .assign(IsAdult = lambda x: np.where(x.AgeState == 'Adult', 1, 0))
-            .pipe(pd.get_dummies, columns = ['Deck', 'Pclass', 'Title', 'Fare_Bin', 'Embarked'])
+            # label feature encoding
+            .assign(DeckLevel = lambda x: x.Deck.map(get_deck_level))
+            # one-hot feature encoding
+            .pipe(pd.get_dummies, columns = ['Title', 'Embarked'])
             # drop unnecessary columns
-            .drop(['Cabin', 'Name', 'Ticket', 'Parch', 'SibSp', 'Sex', 'AgeState'], axis = 1)
+            .drop(['Cabin', 'Name', 'Ticket', 'Parch', 'SibSp', 'Sex', 'AgeState', 'Age', 'Deck', 'Fare'], axis = 1)
             # reorder columns
             .pipe(reorder_columns)
            )
@@ -71,6 +80,19 @@ def get_title(name):
 
 def get_deck(cabin):
     return np.where(pd.notnull(cabin), str(cabin)[0].upper(), 'Z')
+
+def get_deck_level(deck):
+    level_mapping = {
+        'A': 1,
+        'B': 2,
+        'C': 3,
+        'D': 4,
+        'E': 5,
+        'F': 6,
+        'G': 7,
+        'Z': 8
+    }
+    return level_mapping[deck]
 
 def fill_missing_values(df):
     # embarked
